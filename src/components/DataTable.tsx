@@ -16,6 +16,7 @@ export interface DataTableProps<T extends Record<string, any>> {
   onRowSelect?: (selectedRows: T[]) => void;
   className?: string;
   emptyText?: string;
+  ariaLabel?: string; // a11y label for the table
 }
 
 function compareValues(a: unknown, b: unknown): number {
@@ -44,6 +45,7 @@ export function DataTable<T extends Record<string, any>>({
   onRowSelect,
   className = '',
   emptyText = 'No data',
+  ariaLabel = 'Data table',
 }: DataTableProps<T>) {
   type SortOrder = 'asc' | 'desc';
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
@@ -125,107 +127,121 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className={`w-full overflow-x-auto rounded-md border border-gray-200 dark:border-neutral-700 ${className}`}>
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700 text-sm">
-        <thead className="bg-gray-50 dark:bg-neutral-800">
-          <tr>
-            {selectable && (
-              <th className="w-10 px-3 py-2 text-left">
-                <input
-                  ref={headerCheckboxRef}
-                  type="checkbox"
-                  className="h-4 w-4 accent-blue-600"
-                  checked={isAllVisibleSelected}
-                  onChange={handleToggleAll}
-                  aria-label="Select all rows"
-                />
-              </th>
-            )}
-            {columns.map((col) => {
-              const isSorted = sortKey === col.dataIndex;
-              const order = isSorted ? sortOrder : undefined;
-              return (
-                <th
-                  key={col.key}
-                  className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap"
-                >
-                  <button
-                    type="button"
-                    className={`inline-flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 ${
-                      col.sortable ? '' : 'cursor-default'
-                    }`}
-                    onClick={col.sortable ? () => toggleSort(col.dataIndex as keyof T) : undefined}
-                    aria-sort={isSorted ? (order === 'asc' ? 'ascending' : 'descending') : 'none'}
-                  >
-                    <span>{col.title}</span>
-                    {col.sortable && (
-                      <svg
-                        className={`h-3.5 w-3.5 text-gray-500 dark:text-gray-400 ${
-                          isSorted ? 'opacity-100' : 'opacity-40'
-                        }`}
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        {order === 'desc' ? (
-                          <path d="M14.707 10.293a1 1 0 00-1.414 0L10 13.586 6.707 10.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 000-1.414z" />
-                        ) : (
-                          <path d="M5.293 9.707a1 1 0 001.414 0L10 6.414l3.293 3.293a1 1 0 001.414-1.414l-4-4a1 1 0 00-1.414 0l-4 4a1 1 0 000 1.414z" />
-                        )}
-                      </svg>
-                    )}
-                  </button>
+    <div className={`w-full rounded-2xl border border-gray-200 dark:border-neutral-800 shadow-sm bg-white/70 dark:bg-neutral-900/60 backdrop-blur ${className}`}>
+      <div className="overflow-x-auto">
+        <table
+          className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700 text-xs sm:text-sm"
+          role="table"
+          aria-label={ariaLabel}
+        >
+          <thead className="bg-gray-50/80 dark:bg-neutral-800/80">
+            <tr>
+              {selectable && (
+                <th scope="col" className="w-10 px-2 sm:px-3 py-2 text-left">
+                  <input
+                    ref={headerCheckboxRef}
+                    type="checkbox"
+                    className="h-4 w-4 accent-blue-600"
+                    checked={isAllVisibleSelected}
+                    onChange={handleToggleAll}
+                    aria-label="Select all rows"
+                  />
                 </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100">
-          {loading ? (
-            <tr>
-              <td className="px-3 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={(selectable ? 1 : 0) + columns.length}>
-                <div className="inline-flex items-center gap-2">
-                  <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                  <span>Loading...</span>
-                </div>
-              </td>
+              )}
+              {columns.map((col) => {
+                const isSorted = sortKey === col.dataIndex;
+                const order = isSorted ? sortOrder : undefined;
+                return (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    className="px-2 sm:px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap"
+                  >
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 ${
+                        col.sortable ? '' : 'cursor-default'
+                      }`}
+                      onClick={col.sortable ? () => toggleSort(col.dataIndex as keyof T) : undefined}
+                      aria-sort={isSorted ? (order === 'asc' ? 'ascending' : 'descending') : 'none'}
+                      aria-label={col.sortable ? `${col.title}, sort ${isSorted && order === 'asc' ? 'descending' : 'ascending'}` : col.title}
+                    >
+                      <span>{col.title}</span>
+                      {col.sortable && (
+                        <svg
+                          className={`h-3.5 w-3.5 text-gray-500 dark:text-gray-400 ${
+                            isSorted ? 'opacity-100' : 'opacity-40'
+                          }`}
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          {order === 'desc' ? (
+                            <path d="M14.707 10.293a1 1 0 00-1.414 0L10 13.586 6.707 10.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 000-1.414z" />
+                          ) : (
+                            <path d="M5.293 9.707a1 1 0 001.414 0L10 6.414l3.293 3.293a1 1 0 001.414-1.414l-4-4a1 1 0 00-1.414 0l-4 4a1 1 0 000 1.414z" />
+                          )}
+                        </svg>
+                      )}
+                    </button>
+                  </th>
+                );
+              })}
             </tr>
-          ) : rows.length === 0 ? (
-            <tr>
-              <td className="px-3 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={(selectable ? 1 : 0) + columns.length}>
-                {emptyText}
-              </td>
-            </tr>
-          ) : (
-            rows.map(({ row, originalIndex }, i) => {
-              const checked = selectable && selectedIndices.has(originalIndex);
-              return (
-                <tr key={originalIndex} className="hover:bg-gray-50/80 dark:hover:bg-neutral-800/60">
-                  {selectable && (
-                    <td className="px-3 py-2">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-blue-600"
-                        checked={checked}
-                        onChange={() => handleToggleRow(originalIndex)}
-                        aria-label={`Select row ${i + 1}`}
-                      />
-                    </td>
-                  )}
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-3 py-2 whitespace-nowrap">
-                      {String(row[col.dataIndex])}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-neutral-700 bg-white/70 dark:bg-neutral-900/50 text-gray-900 dark:text-gray-100">
+            {loading ? (
+              <tr>
+                <td
+                  className="px-3 py-6 text-center text-gray-500 dark:text-gray-400"
+                  colSpan={(selectable ? 1 : 0) + columns.length}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="inline-flex items-center gap-2">
+                    <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    <span>Loading...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td className="px-3 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={(selectable ? 1 : 0) + columns.length}>
+                  {emptyText}
+                </td>
+              </tr>
+            ) : (
+              rows.map(({ row, originalIndex }, i) => {
+                const checked = selectable && selectedIndices.has(originalIndex);
+                const zebra = i % 2 === 0 ? 'bg-white/70 dark:bg-neutral-900/40' : 'bg-gray-50/60 dark:bg-neutral-800/40';
+                return (
+                  <tr key={originalIndex} className={`${zebra} transition-colors hover:bg-blue-50/60 dark:hover:bg-blue-900/20`}>
+                    {selectable && (
+                      <td className="px-2 sm:px-3 py-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-blue-600"
+                          checked={checked}
+                          onChange={() => handleToggleRow(originalIndex)}
+                          aria-label={`Select row ${i + 1}`}
+                        />
+                      </td>
+                    )}
+                    {columns.map((col) => (
+                      <td key={col.key} className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                        {String(row[col.dataIndex])}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
